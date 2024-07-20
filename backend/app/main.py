@@ -2,8 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from datetime import timedelta
 from typing import List
+from datetime import timedelta
 
 from . import models, schemas, crud, security
 from .database import SessionLocal, engine
@@ -66,10 +66,26 @@ def login_for_access_token(request: TokenRequest, db: Session = Depends(get_db))
 
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # Validate password
+    try:
+        security.validate_password(user.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Check if user already exists
     db_user = crud.get_user_by_username(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
+
+    # Create new user
     return crud.create_user(db=db, user=user)
+
+@app.get("/users/check-username/{username}")
+def check_username(username: str, db: Session = Depends(get_db)):
+    user = crud.get_user_by_username(db, username=username)
+    if user:
+        raise HTTPException(status_code=400, detail="Username is already taken")
+    return {"available": True}
 
 @app.get("/users/me/", response_model=schemas.User)
 def read_users_me(current_user: schemas.User = Depends(get_current_user)):
@@ -80,27 +96,26 @@ def create_note(note: schemas.NoteCreate, db: Session = Depends(get_db), current
     return crud.create_note(db=db, note=note, user_id=current_user.id)
 
 @app.get("/notes/", response_model=List[schemas.Note])
-def read_notes(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    notes = crud.get_notes(db, skip=skip, limit=limit)
-    return notes
+def read_notes(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    return crud.get_notes(db, user_id=current_user.id, skip=skip, limit=limit)
 
 @app.get("/notes/{note_id}", response_model=schemas.Note)
-def read_note(note_id: int, db: Session = Depends(get_db)):
-    db_note = crud.get_note_by_id(db, note_id=note_id)
+def read_note(note_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    db_note = crud.get_note_by_id(db, note_id=note_id, user_id=current_user.id)
     if db_note is None:
         raise HTTPException(status_code=404, detail="Note not found")
     return db_note
 
 @app.put("/notes/{note_id}", response_model=schemas.Note)
-def update_note(note_id: int, note: schemas.NoteUpdate, db: Session = Depends(get_db)):
-    db_note = crud.update_note(db, note_id=note_id, note=note)
+def update_note(note_id: int, note: schemas.NoteUpdate, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    db_note = crud.update_note(db, note_id=note_id, note=note, user_id=current_user.id)
     if db_note is None:
         raise HTTPException(status_code=404, detail="Note not found")
     return db_note
 
 @app.delete("/notes/{note_id}", response_model=schemas.Note)
-def delete_note(note_id: int, db: Session = Depends(get_db)):
-    db_note = crud.delete_note(db, note_id=note_id)
+def delete_note(note_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    db_note = crud.delete_note(db, note_id=note_id, user_id=current_user.id)
     if db_note is None:
         raise HTTPException(status_code=404, detail="Note not found")
     return db_note

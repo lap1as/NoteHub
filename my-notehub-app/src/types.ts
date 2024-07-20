@@ -8,3 +8,8 @@ export interface Note {
     username: string;
     access_token: string;
   }
+
+  export interface NoteCreate {
+    title: string;
+    content: string;
+  }

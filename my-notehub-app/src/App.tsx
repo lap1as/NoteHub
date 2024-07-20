@@ -8,7 +8,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Navbar from './components/Navbar';
-import NoteForm from './components/NoteForm'; // Make sure this is imported
+import NoteForm from './components/NoteForm';
+import NoteEdit from './pages/NoteEdit';
 
 const App: React.FC = () => {
   return (
@@ -32,6 +33,14 @@ const App: React.FC = () => {
               element={
                 <PrivateRoute>
                   <NoteForm /> {/* Component to handle creating new notes */}
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/notes/edit/:id"
+              element={
+                <PrivateRoute>
+                  <NoteEdit />
                 </PrivateRoute>
               }
             />

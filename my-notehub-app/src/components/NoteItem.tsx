@@ -39,4 +39,6 @@ const NoteItem: React.FC<NoteItemProps> = ({ note }) => {
   );
 };
 
+
+
 export default NoteItem;

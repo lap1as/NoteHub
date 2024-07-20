@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, Field
+from typing import Optional
 
 class Token(BaseModel):
     access_token: str
@@ -12,7 +12,7 @@ class UserBase(BaseModel):
     username: str
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(..., min_length=8)
 
 class User(UserBase):
     id: int

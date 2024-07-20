@@ -8,14 +8,43 @@ const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  // Function to check if the username is available
+  const checkUsernameAvailability = async (username: string) => {
+    try {
+      const response = await axios.get(`http://localhost:8000/users/check-username/${username}`);
+      return response.status === 200; // Username is available
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 400) {
+          return false; // Username is taken
+        }
+      }
+      // Handle unexpected errors
+      setError('Failed to check username availability');
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if username is available before proceeding
+    const isAvailable = await checkUsernameAvailability(username);
+
+    if (!isAvailable) {
+      setError('Username is already taken');
+      return;
+    }
+
     try {
-      await axios.post('http://localhost:8000/users', { username, password });
+      await axios.post('http://localhost:8000/users/', { username, password });
       navigate('/login');
     } catch (error) {
-      setError('Registration failed');
+      if (axios.isAxiosError(error) && error.response) {
+        setError(error.response.data.detail || 'Registration failed');
+      } else {
+        setError('Registration failed');
+      }
     }
   };
 

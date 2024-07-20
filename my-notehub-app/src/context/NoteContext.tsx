@@ -1,11 +1,11 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import axios from 'axios';
-import { Note } from '../types';
+import { Note, NoteCreate } from '../types';
 
 interface NoteContextType {
   notes: Note[];
   fetchNotes: (skip?: number, limit?: number) => void;
-  createNote: (note: Note) => void;
+  createNote: (note: NoteCreate) => void; // Use NoteCreate type here
   updateNote: (note: Note) => void;
   deleteNote: (id: number) => Promise<void>;
 }
@@ -19,16 +19,18 @@ interface NoteProviderProps {
 export const NoteProvider: React.FC<NoteProviderProps> = ({ children }) => {
   const [notes, setNotes] = useState<Note[]>([]);
 
-  const fetchNotes = async (skip = 0, limit = 10) => {
+  const fetchNotes = async (skip = 0, limit = 10): Promise<void> => {
     try {
-      const response = await axios.get<Note[]>(`http://localhost:8000/notes?skip=${skip}&limit=${limit}`);
-      setNotes(response.data);
+        const response = await axios.get<Note[]>(`http://localhost:8000/notes?skip=${skip}&limit=${limit}`);
+        setNotes(response.data);
     } catch (error) {
-      console.error('Failed to fetch notes', error);
+        console.error('Failed to fetch notes', error);
     }
-  };
+};
 
-  const createNote = async (note: Note) => {
+
+
+  const createNote = async (note: NoteCreate) => {
     try {
       const response = await axios.post<Note>('http://localhost:8000/notes', note);
       setNotes([...notes, response.data]);
@@ -69,3 +71,5 @@ export const useNotes = () => {
   }
   return context;
 };
+
+export default NoteContext;
